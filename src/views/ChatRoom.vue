@@ -1,9 +1,11 @@
 <template>
     <div class="chat-room">
+      <button @click="goBack" class="back-button">返回</button>
       <h2>{{ roomName }} 聊天室</h2>
       <div class="messages" ref="messagesContainer">
-        <div v-for="message in messages" :key="message.id" class="message">
-          <strong>{{ message.userName }}:</strong> {{ message.text }}
+        <div v-for="message in messages" :key="message.id" class="message-container" :class="{ 'user-message': message.userName === userName }">
+            <div class="message-author">{{ message.userName }}</div>
+            <div class="message-content">{{ message.text }}</div>
         </div>
       </div>
       <div class="input-area">
@@ -17,7 +19,6 @@
   import { ref, onMounted, onUnmounted, nextTick } from 'vue';
   import { useRoute } from 'vue-router';
   import { getDatabase, ref as dbRef, push, onChildAdded, off } from 'firebase/database';
-  import { getAuth, onAuthStateChanged } from 'firebase/auth';
   
   export default {
     setup() {
@@ -27,16 +28,93 @@
       const newMessage = ref('');
       const messagesContainer = ref(null);
       const db = getDatabase();
-      const auth = getAuth();
-      const user = ref(null);
-  
+      const userName = ref(generateRandomNickname());
       const roomRef = dbRef(db, `chatrooms/${roomName.value}`);
+      const goBack = () => {
+        this.$router.push('/');
+      };
+      function generateRandomNickname() {
+        const adjectives = ["台北",
+    "101",
+    "北投",
+    "城市",
+    "北市",
+    "信義",
+    "北投",
+    "士林",
+    "中山",
+    "北車",
+    "松山",
+    "貓空",
+    "陽明",
+    "大稻埕",
+    "天母",
+    "貓纜",
+    "西門",
+    "北城",
+    "北捷",
+    "忠孝路",
+    "內湖",
+    "萬隆",
+    "東區",
+    "大安公園",
+    "城市",
+    "忠孝東路",
+    "中正"];
+        const nouns = ["之光",
+    "小太陽",
+    "小天使",
+    "探索者",
+    "飛鷹",
+    "夢想家",
+    "暖心人",
+    "夜行者",
+    "智者",
+    "追夢人",
+    "飛鳥",
+    "旅人",
+    "山行者",
+    "新星",
+    "茶人",
+    "文青",
+    "心跳",
+    "小精靈",
+    "旅行家",
+    "潛行者",
+    "流浪者",
+    "小俠",
+    "先鋒",
+    "勇者",
+    "夜影",
+    "詩人",
+    "路旅者",
+    "陽光",
+    "小鹿",
+    "夢想者",
+    "藝人",
+    "星辰",
+    "潮人",
+    "騎士",
+    "小仙女",
+    "小虎",
+    "風箏",
+    "微笑",
+    "浪子",
+    "街舞者",
+    "霓虹",
+    "陽光使者",
+    "小太陽",
+    "星光",
+    "築夢人",
+    "漫步者",
+    "火焰",
+    "追風"];
+        const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+        const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+        return `${randomAdjective}${randomNoun}`;
+      }
   
       onMounted(() => {
-        onAuthStateChanged(auth, (currentUser) => {
-          user.value = currentUser;
-        });
-  
         onChildAdded(roomRef, (snapshot) => {
           const message = snapshot.val();
           messages.value.push(message);
@@ -53,13 +131,16 @@
       });
   
       const sendMessage = () => {
-        if (newMessage.value.trim() && user.value) {
+        if (newMessage.value.trim()) {
           push(roomRef, {
-            userName: user.value.displayName || user.value.email,
+            userName: userName.value,
             text: newMessage.value.trim(),
             timestamp: Date.now()
+          }).then(() => {
+            newMessage.value = '';
+          }).catch((error) => {
+            console.error('Error sending message:', error); 
           });
-          newMessage.value = '';
         }
       };
   
@@ -68,52 +149,118 @@
         messages,
         newMessage,
         sendMessage,
-        messagesContainer
+        messagesContainer,
+        goBack
       };
     }
   }
   </script>
   
   <style scoped>
+  .back-button {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 10px 15px;
+    background-color: #36a3b2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .back-button:hover {
+    background-color: #4a4f52;
+  }
   .chat-room {
     display: flex;
     flex-direction: column;
     height: 100vh;
     padding: 20px;
+    background-color: #f4f4f4;
   }
-  
+  h2 {
+    color: #4a4f52;
+    margin-bottom: 20px;
+  }
   .messages {
     flex-grow: 1;
     overflow-y: auto;
     margin-bottom: 20px;
-    border: 1px solid #ccc;
     padding: 10px;
+    border-radius: 10px;
+    background-color: #fff;
+    border: 1px solid #ccc;
   }
-  
-  .message {
-    margin-bottom: 10px;
+  .message-container {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+    max-width: 100%;
   }
-  
+
+  .message-content {
+    padding: 10px 15px;
+    background-color: #36a3b2;
+    color: white;
+    border-radius: 20px;
+    max-width: 70%;
+    word-wrap: break-word;
+  }
+
+  .user-message .message-content {
+    background-color: #4a4f52;
+    margin-left: auto;
+    text-align: right;
+  }
+
+  .message-author {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 5px;
+  }
   .input-area {
     display: flex;
   }
-  
+
   input {
     flex-grow: 1;
     padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
     font-size: 16px;
   }
-  
+
   button {
     padding: 10px 20px;
     font-size: 16px;
-    background-color: #4CAF50;
+    background-color: #36a3b2;
     color: white;
     border: none;
+    border-radius: 4px;
     cursor: pointer;
+    margin-left: 10px;
   }
-  
+
   button:hover {
-    background-color: #45a049;
+    background-color: #4a4f52;
   }
+
+    @media (max-width: 768px) {
+    .chat-room {
+        padding: 10px;
+    }
+
+    .message-content {
+        max-width: 100%;
+    }
+
+    input {
+        font-size: 14px;
+    }
+
+    button {
+        font-size: 14px;
+    }
+  }
+
   </style>
