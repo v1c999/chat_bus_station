@@ -2,7 +2,7 @@
     <div class="chat-room">
       <div class="header">
         <button @click="goBack" class="icon-button">
-          <img src="/src/assets/back.png">
+          <img src="/src/assets/back.png" alt="返回">
         </button>
         <h2>{{ roomName }}</h2>
         <button @click="showBusInfo" class="icon-button">公車資訊</button>
@@ -14,8 +14,8 @@
         </div>
       </div>
       <div class="input-area">
-        <input v-model="newMessage" @keyup.enter="sendMessage" placeholder="輸入訊息..." />
-        <button @click="sendMessage">送出</button>
+        <input v-model="newMessage" @keyup.enter="sendMessage" placeholder="輸入訊息..." :disabled="isSending" />
+        <button @click="sendMessage" class="send" :disabled="isSending">送出</button>
       </div>
     </div>
   </template>
@@ -36,6 +36,7 @@
       const db = getDatabase();
       const userName = ref(generateRandomNickname());
       const roomRef = dbRef(db, `chatrooms/${roomName.value}`);
+      const isSending = ref(false);
   
       const goBack = () => {
         router.push('/');
@@ -127,175 +128,188 @@
       }
   
       onMounted(() => {
-        onChildAdded(roomRef, (snapshot) => {
-          const message = snapshot.val();
-          messages.value.push(message);
-          nextTick(() => {
-            if (messagesContainer.value) {
-              messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
-            }
-          });
+      onChildAdded(roomRef, (snapshot) => {
+        const message = snapshot.val();
+        messages.value.push(message);
+        nextTick(() => {
+          if (messagesContainer.value) {
+            messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
+          }
         });
       });
-  
-      onMounted(() => {
-        onChildAdded(roomRef, (snapshot) => {
-          const message = snapshot.val();
-          messages.value.push(message);
-          nextTick(() => {
-            if (messagesContainer.value) {
-              messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
-            }
-          });
+    });
+
+    onUnmounted(() => {
+      off(roomRef);
+    });
+
+    const sendMessage = () => {
+      if (newMessage.value.trim() && !isSending.value) {
+        isSending.value = true;
+        push(roomRef, {
+          userName: userName.value,
+          text: newMessage.value.trim(),
+          timestamp: Date.now()
+        }).then(() => {
+          newMessage.value = '';
+          setTimeout(() => {
+            isSending.value = false;
+          }, 1000); 
+        }).catch((error) => {
+          console.error('Error sending message:', error);
+          isSending.value = false;
         });
-      });
-  
-      onUnmounted(() => {
-        off(roomRef);
-      });
-  
-      const sendMessage = () => {
-        if (newMessage.value.trim()) {
-          push(roomRef, {
-            userName: userName.value,
-            text: newMessage.value.trim(),
-            timestamp: Date.now()
-          }).then(() => {
-            newMessage.value = '';
-          }).catch((error) => {
-            console.error('Error sending message:', error); 
-          });
-        }
-      };
-  
-      return {
-        roomName,
-        messages,
-        newMessage,
-        sendMessage,
-        messagesContainer,
-        goBack,
-        showBusInfo,
-      };
-    }
+      }
+    };
+
+    return {
+      roomName,
+      messages,
+      newMessage,
+      sendMessage,
+      messagesContainer,
+      goBack,
+      showBusInfo,
+      isSending,
+      userName
+    };
   }
-  </script>
-  
-  <style scoped>
-  .chat-room {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    padding: 20px;
-    background-color: #f4f4f4;
-  }
-  
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-  
-  h2 {
-    color: #4a4f52;
-    margin: 0;
-    text-align: center;
-    flex-grow: 1;
-  }
-  
-  .icon-button {
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    color: #36a3b2;
-  }
-  
-  .icon-button:hover {
-    color: #4a4f52;
-  }
-  
-  .messages {
-    flex-grow: 1;
-    overflow-y: auto;
-    margin-bottom: 20px;
-    padding: 10px;
-    border-radius: 10px;
-    background-color: #fff;
-    border: 1px solid #ccc;
-  }
-  
+}
+</script>
+
+<style scoped>
+.chat-room {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  background-color: #f4f4f4;
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: #36a3b2;
+  color: white;
+}
+
+h2 {
+  margin: 0;
+  text-align: center;
+  flex-grow: 1;
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.icon-button img {
+  width: 24px;
+  height: 24px;
+}
+
+.messages {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.message-container {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+  max-width: 80%;
+  align-self: flex-start;
+}
+
+.message-content {
+  padding: 10px 15px;
+  background-color: #36a4b285;
+  color: white;
+  border-radius: 20px;
+  word-wrap: break-word;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.user-message {
+  align-self: flex-end;
+}
+
+.user-message .message-content {
+  color: #4a4f52;
+  background-color: #ccd5d7;
+}
+
+.message-author {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 5px;
+}
+
+.user-message .message-author {
+  text-align: right;
+}
+
+.input-area {
+  display: flex;
+  padding: 20px;
+  background-color: white;
+}
+
+input {
+  flex-grow: 1;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  font-size: 16px;
+  margin-right: 10px;
+}
+
+button {
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #36a3b2;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.send:hover:not(:disabled) {
+  background-color: #4a4f52;
+}
+
+.icon-button:hover {
+  transform: scale(1.3);
+}
+
+@media (max-width: 768px) {
   .message-container {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 15px;
-    max-width: 100%;
+    max-width: 90%;
   }
-  
-  .message-content {
-    padding: 10px 15px;
-    background-color: #36a3b2;
-    color: white;
-    border-radius: 20px;
-    max-width: 70%;
-    word-wrap: break-word;
-  }
-  
-  .user-message .message-content {
-    background-color: #4a4f52;
-    margin-left: auto;
-    text-align: right;
-  }
-  
-  .message-author {
-    font-size: 12px;
-    color: #888;
-    margin-bottom: 5px;
-  }
-  
-  .input-area {
-    display: flex;
-  }
-  
+
   input {
-    flex-grow: 1;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 16px;
+    font-size: 14px;
   }
-  
+
   button {
-    padding: 10px 20px;
-    font-size: 16px;
-    background-color: #36a3b2;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-left: 10px;
+    font-size: 14px;
+    padding: 10px 15px;
   }
-  
-  button:hover {
-    background-color: #4a4f52;
-  }
-  
-  @media (max-width: 768px) {
-    .chat-room {
-      padding: 10px;
-    }
-  
-    .message-content {
-      max-width: 100%;
-    }
-  
-    input {
-      font-size: 14px;
-    }
-  
-    button {
-      font-size: 14px;
-    }
-  }
-  </style>
+}
+</style>
