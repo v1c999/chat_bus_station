@@ -1,15 +1,12 @@
+
+<script setup>
+import { RouterView } from 'vue-router'
+</script>
+
 <template>
-  <header>
-    <div class="title">BusChat!</div>
-    <div class="stops">
-      公車站名
-      <ul>
-        <button @click="toChatRoom">
-          <li v-for="(stop, index) in filteredStops" :key="index">{{ stop.name }}</li>
-        </button>
-      </ul>
-    </div>
-  </header>
+  <div id="app">
+    <RouterView></RouterView>  <!-- 這裡用來顯示對應路由的內容 -->
+  </div>
 </template>
 
 <script setup>
@@ -78,10 +75,5 @@ header {
 }
 .location-info {
   margin-top: 20px;
-}
-
-button{
-  padding: 1px;
-  border: 5px;
 }
 </style>
