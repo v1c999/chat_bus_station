@@ -44,6 +44,7 @@
   
       const showBusInfo = () => {
         console.log('顯示公車資訊');
+        router.push(`/businfo/${roomName.value}`);
       };
   
       function generateRandomNickname() {
