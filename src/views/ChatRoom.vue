@@ -9,9 +9,24 @@
           {{ showBusInfo ? '關閉公車資訊' : '查看公車資訊' }}
         </button>
       </div>
-      <div v-if="showBusInfo" class="bus-info-modal">
-          <h3>公車資訊</h3>
-          <p>這裡顯示公車資訊的內容...</p>
+      <div v-if="showBusInfo" class="bus-info-overlay" @click="closeBusInfo">
+        <div class="bus-info-modal" @click.stop>
+            <h3>公車資訊 🚌💭</h3>
+            <table class="bus-info-table">
+                <thead>
+                <tr>
+                    <th>路線</th>
+                    <th>到站時間</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="(bus, index) in busInfo" :key="index">
+                    <td>{{ bus.route }}</td>
+                    <td>{{ bus.arrivalTime }}</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
       </div>
       <div class="messages" ref="messagesContainer">
         
@@ -49,7 +64,31 @@
       const roomRef = dbRef(db, `chatrooms/${roomName.value}`);
       const isSending = ref(false);
       const showBusInfo = ref(false);
-  
+      const busInfo = ref([
+        { route: '307', arrivalTime: '5分鐘' },
+        { route: '513', arrivalTime: '10分鐘' },
+        { route: '235', arrivalTime: '15分鐘' },
+        { route: '307', arrivalTime: '5分鐘' },
+        { route: '307', arrivalTime: '5分鐘' },
+        { route: '307', arrivalTime: '5分鐘' },
+        { route: '307', arrivalTime: '5分鐘' },
+        { route: '307', arrivalTime: '5分鐘' },
+        { route: '307', arrivalTime: '5分鐘' },
+        { route: '307', arrivalTime: '5分鐘' },
+        { route: '307', arrivalTime: '5分鐘' },
+        { route: '307', arrivalTime: '5分鐘' },
+        { route: '307', arrivalTime: '5分鐘' },
+        { route: '307', arrivalTime: '5分鐘' },
+        { route: '307', arrivalTime: '5分鐘' },
+        { route: '307', arrivalTime: '5分鐘' },
+        { route: '307', arrivalTime: '5分鐘' },
+        { route: '307', arrivalTime: '5分鐘' },
+        { route: '307', arrivalTime: '5分鐘' },
+        { route: '307', arrivalTime: '5分鐘' },
+      ]);
+      const closeBusInfo = () => {
+        showBusInfo.value = false;
+      };
       function getUserId() {
         let id = localStorage.getItem('userId');
         if (!id) {
@@ -139,13 +178,27 @@
         isSending,
         userName,
         userId,
-        formatTimestamp
+        formatTimestamp,
+        busInfo,
+        closeBusInfo
       };
     }
   }
   </script>
   
   <style scoped>
+.bus-info-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
 .bus-info-modal {
   position: absolute;
   top: 50%;
@@ -157,13 +210,40 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   z-index: 1000;
   max-width: 80%;
-  max-height: 80%;
+  max-height: 70%;
+  min-width: 70%;
   overflow-y: auto;
 }
 
 .bus-info-modal h3 {
   margin-top: 0;
   color: #36a3b2;
+  margin-bottom: 15px;
+}
+
+.bus-info-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.bus-info-table th,
+.bus-info-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+
+.bus-info-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+.bus-info-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.bus-info-table tr:hover {
+  background-color: #f5f5f5;
 }
 
 .messages {
