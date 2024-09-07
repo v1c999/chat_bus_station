@@ -30,14 +30,14 @@
 import axios from 'axios';
 import { useGeolocation } from '@vueuse/core';
 import { ref, watchEffect, computed } from 'vue';
-
+import { useRouter } from 'vue-router';
 const { coords } = useGeolocation();
 const latitude = ref(null);
 const longitude = ref(null);
 const stops = ref([]);
 const filteredStops = ref([]);
 const uniqueFilteredStops = ref([]);
-
+const router = useRouter();
 const selectedRoom = ref(null);
 
 axios.get('/json/GetStopLocation.json')
@@ -73,7 +73,7 @@ watchEffect(() => {
 });
 
 const selectRoom = (room) => {
-  selectedRoom.value = room;
+  router.push({ name: 'chatroom', params: { roomName: room} });
 };
 
 const goBack = () => {

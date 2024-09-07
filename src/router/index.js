@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import home01 from '../components/Home.vue'
+import ChatRoom from '../views/ChatRoom.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -14,9 +15,9 @@ const router = createRouter({
       component: () => import('../views/AboutView.vue')
     },
     {
-      path: '/chatroom',
+      path: '/chatroom/:roomName',
       name: 'chatroom',
-      component: () => import('../views/ChatRoom.vue')
+      component: ChatRoom
     },
     {
       path: '/',
