@@ -1,12 +1,10 @@
 <template>
   <div>
-    <!-- Navbar with dynamic title -->
     <nav class="navbar">
       <button v-if="selectedRoom" class="back-button" @click="goBack">返回上一頁</button>
       <h1>{{ navbarTitle }}</h1>
     </nav>
 
-    <!-- Content showing either the selected room or available rooms -->
     <div class="content">
       <div v-if="selectedRoom">
         <h2>{{ selectedRoom }}</h2>
@@ -14,7 +12,7 @@
       <div v-else>
         <div v-if="uniqueFilteredStops.length > 0">
           <ul class="chatroom-list">
-            <!-- Bus stops will be shown as chat rooms -->
+
             <li class="name" v-for="(stop, index) in uniqueFilteredStops" :key="index" @click="selectRoom(stop.name)">
               {{ stop.name }}
             </li>
@@ -33,7 +31,6 @@ import axios from 'axios';
 import { useGeolocation } from '@vueuse/core';
 import { ref, watchEffect, computed } from 'vue';
 import { useRouter } from 'vue-router';
-// Reactive variables for latitude, longitude, and bus stops
 const { coords } = useGeolocation();
 const latitude = ref(null);
 const longitude = ref(null);
@@ -41,10 +38,8 @@ const stops = ref([]);
 const filteredStops = ref([]);
 const uniqueFilteredStops = ref([]);
 const router = useRouter();
-// Room selection state
 const selectedRoom = ref(null);
 
-// Fetch bus stop data and filter based on location
 axios.get('/json/GetStopLocation.json')
   .then(response => {
     stops.value = response.data.BusInfo; // Load bus stop data
@@ -77,7 +72,6 @@ watchEffect(() => {
   }
 });
 
-// Methods for room selection and navigation
 const selectRoom = (room) => {
   router.push({ name: 'chatroom', params: { roomName: room} });
 };
@@ -86,19 +80,22 @@ const goBack = () => {
   selectedRoom.value = null;
 };
 
-// Dynamic navbar title based on selected room
 const navbarTitle = computed(() => {
   return selectedRoom.value ? selectedRoom.value : '可用的聊天室';
 });
 </script>
 
 <style scoped>
+
+.app{
+  background-color: white;
+}
 .navbar {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  background-color: #333;
+  background-color: #36a3b2;
   color: white;
   padding: 1rem;
   text-align: center;
@@ -107,6 +104,7 @@ const navbarTitle = computed(() => {
   justify-content: center;
   align-items: center;
   gap: 1rem;
+  font-weight: 700;
 }
 
 .navbar h1 {
@@ -145,9 +143,12 @@ const navbarTitle = computed(() => {
   width: 90%;
   margin-bottom: 1rem;
   padding: 0.5rem;
-  background-color: #f4f4f4;
+  background-color: #4a4f52;
+  opacity: 0.4;
+  color: white;
   border-radius: 5px;
   text-align: center;
+  font-weight: 700;
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
