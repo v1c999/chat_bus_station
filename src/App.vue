@@ -1,15 +1,11 @@
 <script setup>
-import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
+import { RouterView } from 'vue-router'
 </script>
 
 <template>
-  <header>
-    <div class="title">BusChat!</div>
-    <div class="stops">
-      公車站名
-    </div>
-  </header>
+  <div id="app">
+    <RouterView></RouterView>  <!-- 這裡用來顯示對應路由的內容 -->
+  </div>
 </template>
 
 <style scoped>
@@ -20,10 +16,4 @@ header {
 .title {
   font-size: 50px;
 }
-
 </style>
-
-
-<script setup>
-
-</script>
