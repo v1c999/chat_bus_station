@@ -18,6 +18,9 @@
             </li>
           </ul>
         </div>
+        <div v-else-if="loading" class="loading-page">
+          定位中，請稍候...
+        </div>
         <div v-else>
           附近無公車站牌
         </div>
@@ -30,15 +33,20 @@
 import axios from 'axios';
 import { useGeolocation } from '@vueuse/core';
 import { ref, watchEffect, computed } from 'vue';
-import { useRouter } from 'vue-router';
+
 const { coords } = useGeolocation();
 const latitude = ref(null);
 const longitude = ref(null);
 const stops = ref([]);
 const filteredStops = ref([]);
 const uniqueFilteredStops = ref([]);
-const router = useRouter();
+const load = ref(true);
 const selectedRoom = ref(null);
+
+function loading(){
+  load = false;
+  console.log(load);
+};
 
 axios.get('/json/GetStopLocation.json')
   .then(response => {
@@ -73,7 +81,7 @@ watchEffect(() => {
 });
 
 const selectRoom = (room) => {
-  router.push({ name: 'chatroom', params: { roomName: room} });
+  selectedRoom.value = room;
 };
 
 const goBack = () => {
@@ -159,6 +167,12 @@ const navbarTitle = computed(() => {
 
 .name{
   color: black;
+}
+
+.loading-page {
+  font-size: 30px;
+  text-align: center;
+  font-weight: 700;
 }
 
 @media (min-width: 768px) {
