@@ -1,7 +1,4 @@
 
-<script setup>
-import { RouterView } from 'vue-router'
-</script>
 
 <template>
   <div id="app">
@@ -10,6 +7,7 @@ import { RouterView } from 'vue-router'
 </template>
 
 <script setup>
+import { RouterView } from 'vue-router';
 import axios from 'axios';
 import { useGeolocation } from '@vueuse/core';
 import { ref, watchEffect } from 'vue';
