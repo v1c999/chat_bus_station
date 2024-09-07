@@ -5,9 +5,16 @@
           <img src="/src/assets/back.png" alt="返回">
         </button>
         <h2>{{ roomName }}</h2>
-        <button @click="showBusInfo" class="icon-button">公車資訊</button>
+        <button @click="toggleBusInfo" class="icon-button">
+          {{ showBusInfo ? '關閉公車資訊' : '查看公車資訊' }}
+        </button>
+      </div>
+      <div v-if="showBusInfo" class="bus-info-modal">
+          <h3>公車資訊</h3>
+          <p>這裡顯示公車資訊的內容...</p>
       </div>
       <div class="messages" ref="messagesContainer">
+        
         <div v-for="message in messages" :key="message.id" class="message-container" :class="{ 'user-message': message.userId === userId }">
           <div class="message-author">{{ message.userName }}</div>
           <div class="message-content-wrapper">
@@ -41,6 +48,7 @@
       const userName = ref(getUserName());
       const roomRef = dbRef(db, `chatrooms/${roomName.value}`);
       const isSending = ref(false);
+      const showBusInfo = ref(false);
   
       function getUserId() {
         let id = localStorage.getItem('userId');
@@ -72,9 +80,8 @@
         router.push('/');
       };
   
-      const showBusInfo = () => {
-        console.log('顯示公車資訊');
-        router.push(`/businfo/${roomName.value}`);
+      const toggleBusInfo = () => {
+        showBusInfo.value = !showBusInfo.value;
       };
   
       onMounted(() => {
@@ -127,6 +134,7 @@
         sendMessage,
         messagesContainer,
         goBack,
+        toggleBusInfo,
         showBusInfo,
         isSending,
         userName,
@@ -136,8 +144,31 @@
     }
   }
   </script>
+  
+  <style scoped>
+.bus-info-modal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  max-width: 80%;
+  max-height: 80%;
+  overflow-y: auto;
+}
 
-<style scoped>
+.bus-info-modal h3 {
+  margin-top: 0;
+  color: #36a3b2;
+}
+
+.messages {
+  position: relative;
+}
 .chat-room {
   display: flex;
   flex-direction: column;
@@ -153,7 +184,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 20px;
+  padding: 10px;
   background-color: #36a3b2;
   color: white;
 }
