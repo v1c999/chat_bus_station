@@ -1,5 +1,3 @@
-
-
 <template>
   <div id="app">
     <RouterView></RouterView>  <!-- 這裡用來顯示對應路由的內容 -->
@@ -53,8 +51,6 @@ function toChatRoom(){
   console.log('clicked!');
 }
 </script>
-
-
 
 <style scoped>
 header {

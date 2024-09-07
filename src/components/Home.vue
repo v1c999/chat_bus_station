@@ -40,7 +40,10 @@ const longitude = ref(null);
 const stops = ref([]);
 const filteredStops = ref([]);
 const uniqueFilteredStops = ref([]);
-const load = ref(true);
+let load = ref(true);
+function loading(){
+  load = false;
+};
 const selectedRoom = ref(null);
 const router = useRouter();
 axios.get('/json/GetStopLocation.json')
@@ -75,9 +78,6 @@ watchEffect(() => {
   }
 });
 
-function loading(){
-  load = false;
-};
 
 const selectRoom = (room) => {
   router.push({ name: 'chatroom', params: { roomName: room } });
