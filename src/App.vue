@@ -4,7 +4,9 @@
     <div class="stops">
       公車站名
       <ul>
-        <li v-for="(stop, index) in filteredStops" :key="index">{{ stop.name }}</li>
+        <button @click="toChatRoom">
+          <li v-for="(stop, index) in filteredStops" :key="index">{{ stop.name }}</li>
+        </button>
       </ul>
     </div>
   </header>
@@ -51,7 +53,13 @@ axios.get('/json/GetStopLocation.json')
   .catch(error => {
     console.error('Error fetching the JSON:', error);
   });
+
+function toChatRoom(){
+  console.log('clicked!');
+}
 </script>
+
+
 
 <style scoped>
 header {
@@ -70,5 +78,10 @@ header {
 }
 .location-info {
   margin-top: 20px;
+}
+
+button{
+  padding: 1px;
+  border: 5px;
 }
 </style>
