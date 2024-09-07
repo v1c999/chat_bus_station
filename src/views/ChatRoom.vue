@@ -8,9 +8,12 @@
         <button @click="showBusInfo" class="icon-button">公車資訊</button>
       </div>
       <div class="messages" ref="messagesContainer">
-        <div v-for="message in messages" :key="message.id" class="message-container" :class="{ 'user-message': message.userName === userName }">
+        <div v-for="message in messages" :key="message.id" class="message-container" :class="{ 'user-message': message.userId === userId }">
           <div class="message-author">{{ message.userName }}</div>
-          <div class="message-content">{{ message.text }}</div>
+          <div class="message-content-wrapper">
+            <div class="message-content">{{ message.text }}</div>
+            <div class="message-timestamp">{{ formatTimestamp(message.timestamp) }}</div>
+          </div>
         </div>
       </div>
       <div class="input-area">
@@ -34,9 +37,36 @@
       const newMessage = ref('');
       const messagesContainer = ref(null);
       const db = getDatabase();
-      const userName = ref(generateRandomNickname());
+      const userId = ref(getUserId());
+      const userName = ref(getUserName());
       const roomRef = dbRef(db, `chatrooms/${roomName.value}`);
       const isSending = ref(false);
+  
+      function getUserId() {
+        let id = localStorage.getItem('userId');
+        if (!id) {
+          id = 'user_' + Math.random().toString(36).substr(2, 9);
+          localStorage.setItem('userId', id);
+        }
+        return id;
+      }
+  
+      function getUserName() {
+        let name = localStorage.getItem('userName');
+        if (!name) {
+          name = generateRandomNickname();
+          localStorage.setItem('userName', name);
+        }
+        return name;
+      }
+  
+      function generateRandomNickname() {
+        const adjectives = ["台北", "101", "北投", "城市", "北市", "信義", "北投", "士林", "中山", "北車", "松山", "貓空", "陽明", "大稻埕", "天母", "貓纜", "西門", "北城", "北捷", "忠孝路", "內湖", "萬隆", "東區", "大安公園", "城市", "忠孝東路", "中正"];
+        const nouns = ["之光", "小太陽", "小天使", "探索者", "飛鷹", "夢想家", "暖心人", "夜行者", "智者", "追夢人", "飛鳥", "旅人", "山行者", "新星", "茶人", "文青", "心跳", "小精靈", "旅行家", "潛行者", "流浪者", "小俠", "先鋒", "勇者", "夜影", "詩人", "路旅者", "陽光", "小鹿", "夢想者", "藝人", "星辰", "潮人", "騎士", "小仙女", "小虎", "風箏", "微笑", "浪子", "街舞者", "霓虹", "陽光使者", "小太陽", "星光", "築夢人", "漫步者", "火焰", "追風"];
+        const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+        const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+        return `${randomAdjective}${randomNoun}`;
+      }
   
       const goBack = () => {
         router.push('/');
@@ -47,136 +77,65 @@
         router.push(`/businfo/${roomName.value}`);
       };
   
-      function generateRandomNickname() {
-        const adjectives = ["台北",
-    "101",
-    "北投",
-    "城市",
-    "北市",
-    "信義",
-    "北投",
-    "士林",
-    "中山",
-    "北車",
-    "松山",
-    "貓空",
-    "陽明",
-    "大稻埕",
-    "天母",
-    "貓纜",
-    "西門",
-    "北城",
-    "北捷",
-    "忠孝路",
-    "內湖",
-    "萬隆",
-    "東區",
-    "大安公園",
-    "城市",
-    "忠孝東路",
-    "中正"];
-        const nouns = ["之光",
-    "小太陽",
-    "小天使",
-    "探索者",
-    "飛鷹",
-    "夢想家",
-    "暖心人",
-    "夜行者",
-    "智者",
-    "追夢人",
-    "飛鳥",
-    "旅人",
-    "山行者",
-    "新星",
-    "茶人",
-    "文青",
-    "心跳",
-    "小精靈",
-    "旅行家",
-    "潛行者",
-    "流浪者",
-    "小俠",
-    "先鋒",
-    "勇者",
-    "夜影",
-    "詩人",
-    "路旅者",
-    "陽光",
-    "小鹿",
-    "夢想者",
-    "藝人",
-    "星辰",
-    "潮人",
-    "騎士",
-    "小仙女",
-    "小虎",
-    "風箏",
-    "微笑",
-    "浪子",
-    "街舞者",
-    "霓虹",
-    "陽光使者",
-    "小太陽",
-    "星光",
-    "築夢人",
-    "漫步者",
-    "火焰",
-    "追風"];
-        const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
-        const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
-        return `${randomAdjective}${randomNoun}`;
-      }
-  
       onMounted(() => {
-      onChildAdded(roomRef, (snapshot) => {
-        const message = snapshot.val();
-        messages.value.push(message);
-        nextTick(() => {
-          if (messagesContainer.value) {
-            messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
-          }
+        onChildAdded(roomRef, (snapshot) => {
+          const message = snapshot.val();
+          messages.value.push(message);
+          nextTick(() => {
+            if (messagesContainer.value) {
+              messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
+            }
+          });
         });
       });
-    });
-
-    onUnmounted(() => {
-      off(roomRef);
-    });
-
-    const sendMessage = () => {
-      if (newMessage.value.trim() && !isSending.value) {
-        isSending.value = true;
-        push(roomRef, {
-          userName: userName.value,
-          text: newMessage.value.trim(),
-          timestamp: Date.now()
-        }).then(() => {
-          newMessage.value = '';
-          setTimeout(() => {
+  
+      onUnmounted(() => {
+        off(roomRef);
+      });
+  
+      const sendMessage = () => {
+        if (newMessage.value.trim() && !isSending.value) {
+          isSending.value = true;
+          push(roomRef, {
+            userId: userId.value,
+            userName: userName.value,
+            text: newMessage.value.trim(),
+            timestamp: Date.now()
+          }).then(() => {
+            newMessage.value = '';
+            setTimeout(() => {
+              isSending.value = false;
+            }, 1000); 
+          }).catch((error) => {
+            console.error('Error sending message:', error);
             isSending.value = false;
-          }, 1000); 
-        }).catch((error) => {
-          console.error('Error sending message:', error);
-          isSending.value = false;
-        });
-      }
-    };
-
-    return {
-      roomName,
-      messages,
-      newMessage,
-      sendMessage,
-      messagesContainer,
-      goBack,
-      showBusInfo,
-      isSending,
-      userName
-    };
+          });
+        }
+      };
+  
+      const formatTimestamp = (timestamp) => {
+        const date = new Date(timestamp);
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        return `${hours}:${minutes}`;
+      };
+  
+      return {
+        roomName,
+        messages,
+        newMessage,
+        sendMessage,
+        messagesContainer,
+        goBack,
+        showBusInfo,
+        isSending,
+        userName,
+        userId,
+        formatTimestamp
+      };
+    }
   }
-}
-</script>
+  </script>
 
 <style scoped>
 .chat-room {
@@ -232,6 +191,11 @@ h2 {
   align-self: flex-start;
 }
 
+.message-content-wrapper {
+  display: flex;
+  align-items: flex-end;
+}
+
 .message-content {
   padding: 10px 15px;
   background-color: #36a4b285;
@@ -241,6 +205,11 @@ h2 {
   display: inline-block;
   max-width: 100%;
 }
+
+.user-message .message-content-wrapper {
+  flex-direction: row-reverse;
+}
+
 
 .user-message {
   align-self: flex-end;
@@ -298,6 +267,18 @@ button:disabled {
 .icon-button:hover {
   transform: scale(1.3);
 }
+
+.message-timestamp {
+  font-size: 10px;
+  color: #999;
+  margin-left: 10px;
+}
+
+.user-message .message-timestamp {
+  margin-left: 0;
+  margin-right: 10px; 
+}
+
 
 @media (max-width: 768px) {
   .message-container {
