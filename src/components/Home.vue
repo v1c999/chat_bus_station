@@ -32,7 +32,7 @@
 import axios from 'axios';
 import { useGeolocation } from '@vueuse/core';
 import { ref, watchEffect, computed } from 'vue';
-
+import { useRouter } from 'vue-router';
 // Reactive variables for latitude, longitude, and bus stops
 const { coords } = useGeolocation();
 const latitude = ref(null);
@@ -40,7 +40,7 @@ const longitude = ref(null);
 const stops = ref([]);
 const filteredStops = ref([]);
 const uniqueFilteredStops = ref([]);
-
+const router = useRouter();
 // Room selection state
 const selectedRoom = ref(null);
 
@@ -79,7 +79,7 @@ watchEffect(() => {
 
 // Methods for room selection and navigation
 const selectRoom = (room) => {
-  selectedRoom.value = room;
+  router.push({ name: 'chatroom', params: { roomName: room} });
 };
 
 const goBack = () => {
