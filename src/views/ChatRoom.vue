@@ -1,11 +1,16 @@
 <template>
     <div class="chat-room">
-      <button @click="goBack" class="back-button">返回</button>
-      <h2>{{ roomName }} 聊天室</h2>
+      <div class="header">
+        <button @click="goBack" class="icon-button">
+          <img src="/src/assets/back.png">
+        </button>
+        <h2>{{ roomName }}</h2>
+        <button @click="showBusInfo" class="icon-button">公車資訊</button>
+      </div>
       <div class="messages" ref="messagesContainer">
         <div v-for="message in messages" :key="message.id" class="message-container" :class="{ 'user-message': message.userName === userName }">
-            <div class="message-author">{{ message.userName }}</div>
-            <div class="message-content">{{ message.text }}</div>
+          <div class="message-author">{{ message.userName }}</div>
+          <div class="message-content">{{ message.text }}</div>
         </div>
       </div>
       <div class="input-area">
@@ -17,12 +22,13 @@
   
   <script>
   import { ref, onMounted, onUnmounted, nextTick } from 'vue';
-  import { useRoute } from 'vue-router';
+  import { useRoute, useRouter } from 'vue-router';
   import { getDatabase, ref as dbRef, push, onChildAdded, off } from 'firebase/database';
   
   export default {
     setup() {
       const route = useRoute();
+      const router = useRouter();
       const roomName = ref(route.params.roomName);
       const messages = ref([]);
       const newMessage = ref('');
@@ -30,9 +36,15 @@
       const db = getDatabase();
       const userName = ref(generateRandomNickname());
       const roomRef = dbRef(db, `chatrooms/${roomName.value}`);
+  
       const goBack = () => {
-        this.$router.push('/');
+        router.push('/');
       };
+  
+      const showBusInfo = () => {
+        console.log('顯示公車資訊');
+      };
+  
       function generateRandomNickname() {
         const adjectives = ["台北",
     "101",
@@ -126,6 +138,18 @@
         });
       });
   
+      onMounted(() => {
+        onChildAdded(roomRef, (snapshot) => {
+          const message = snapshot.val();
+          messages.value.push(message);
+          nextTick(() => {
+            if (messagesContainer.value) {
+              messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
+            }
+          });
+        });
+      });
+  
       onUnmounted(() => {
         off(roomRef);
       });
@@ -150,27 +174,14 @@
         newMessage,
         sendMessage,
         messagesContainer,
-        goBack
+        goBack,
+        showBusInfo,
       };
     }
   }
   </script>
   
   <style scoped>
-  .back-button {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    padding: 10px 15px;
-    background-color: #36a3b2;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  .back-button:hover {
-    background-color: #4a4f52;
-  }
   .chat-room {
     display: flex;
     flex-direction: column;
@@ -178,10 +189,33 @@
     padding: 20px;
     background-color: #f4f4f4;
   }
-  h2 {
-    color: #4a4f52;
+  
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 20px;
   }
+  
+  h2 {
+    color: #4a4f52;
+    margin: 0;
+    text-align: center;
+    flex-grow: 1;
+  }
+  
+  .icon-button {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #36a3b2;
+  }
+  
+  .icon-button:hover {
+    color: #4a4f52;
+  }
+  
   .messages {
     flex-grow: 1;
     overflow-y: auto;
@@ -191,13 +225,14 @@
     background-color: #fff;
     border: 1px solid #ccc;
   }
+  
   .message-container {
     display: flex;
     flex-direction: column;
     margin-bottom: 15px;
     max-width: 100%;
   }
-
+  
   .message-content {
     padding: 10px 15px;
     background-color: #36a3b2;
@@ -206,22 +241,23 @@
     max-width: 70%;
     word-wrap: break-word;
   }
-
+  
   .user-message .message-content {
     background-color: #4a4f52;
     margin-left: auto;
     text-align: right;
   }
-
+  
   .message-author {
     font-size: 12px;
     color: #888;
     margin-bottom: 5px;
   }
+  
   .input-area {
     display: flex;
   }
-
+  
   input {
     flex-grow: 1;
     padding: 10px;
@@ -229,7 +265,7 @@
     border-radius: 4px;
     font-size: 16px;
   }
-
+  
   button {
     padding: 10px 20px;
     font-size: 16px;
@@ -240,27 +276,26 @@
     cursor: pointer;
     margin-left: 10px;
   }
-
+  
   button:hover {
     background-color: #4a4f52;
   }
-
-    @media (max-width: 768px) {
+  
+  @media (max-width: 768px) {
     .chat-room {
-        padding: 10px;
+      padding: 10px;
     }
-
+  
     .message-content {
-        max-width: 100%;
+      max-width: 100%;
     }
-
+  
     input {
-        font-size: 14px;
+      font-size: 14px;
     }
-
+  
     button {
-        font-size: 14px;
+      font-size: 14px;
     }
   }
-
   </style>
