@@ -43,11 +43,6 @@ const uniqueFilteredStops = ref([]);
 const load = ref(true);
 const selectedRoom = ref(null);
 
-function loading(){
-  load = false;
-  console.log(load);
-};
-
 axios.get('/json/GetStopLocation.json')
   .then(response => {
     stops.value = response.data.BusInfo; // Load bus stop data
@@ -79,6 +74,10 @@ watchEffect(() => {
     });
   }
 });
+
+function loading(){
+  load = false;
+};
 
 const selectRoom = (room) => {
   selectedRoom.value = room;
