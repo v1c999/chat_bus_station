@@ -3,6 +3,7 @@ import HomeView from '../views/HomeView.vue'
 import home01 from '../components/Home.vue'
 import ChatRoom from '../views/ChatRoom.vue'
 import businfo from '../components/businfo.vue'
+import Script from '../views/Script.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -28,6 +29,10 @@ const router = createRouter({
       path: '/businfo/:roomName',
       name: 'BusInfo',
       component: businfo
+    },
+    {
+      path: '/script',
+      component: Script
     }
 
   ]
