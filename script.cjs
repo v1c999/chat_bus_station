@@ -7,14 +7,12 @@ const urls = [
     'https://tcgbusfs.blob.core.windows.net/blobbus/GetStop.gz',
     'https://tcgbusfs.blob.core.windows.net/blobbus/GetEstimateTime.gz',
     'https://tcgbusfs.blob.core.windows.net/blobbus/GetRoute.gz',
-    'https://tcgbusfs.blob.core.windows.net/blobbus/GetPathDetail.gz',
-    'https://tcgbusfs.blob.core.windows.net/blobbus/GetStopLocation.gz'
 ];
 
 async function downloadAndUnzipGz() {
     try {
         for (const url of urls) {
-            const fileName = path.basename(url, '.gz'); // 获取文件名（去掉 .gz 后缀）
+            const fileName = path.basename(url, '.gz'); // 取得不包含 .gz 的檔名
             const response = await axios({
                 method: 'get',
                 url,
