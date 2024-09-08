@@ -12,7 +12,11 @@
     <div v-if="showBusInfo" class="bus-info-overlay" @click="closeBusInfo">
       <div class="bus-info-modal" @click.stop>
         <h3>公車資訊 🚌💭</h3>
-        <table class="bus-info-table">
+        <div v-if="isLoading" class="loading-container">
+          <div class="loading-spinner"></div>
+        </div>
+
+        <table v-else class="bus-info-table">
           <thead>
             <tr>
               <th>路線</th>
@@ -62,12 +66,12 @@ export default {
     const messagesContainer = ref(null);
     const db = getDatabase();
     const userId = ref(getUserId());
-    const userName = ref(getUserName());
+    const userName = ref(getUserName(roomName.value));
     const roomRef = dbRef(db, `chatrooms/${roomName.value}`);
     const isSending = ref(false);
     const showBusInfo = ref(false);
     const busInfo = ref([]);
-
+    const isLoading = ref(false);
     const toggleBusInfo = async () => {
       showBusInfo.value = !showBusInfo.value;
       if (showBusInfo.value) {
@@ -76,6 +80,7 @@ export default {
     };
 
     const fetchBusInfo = async () => {
+        isLoading.value = true;
       try {
         const stopResponse = await axios.get('http://localhost:3005/getstopid');
         const stopData = stopResponse.data.data.BusInfo;
@@ -107,6 +112,8 @@ export default {
 
       } catch (err) {
         console.error('獲取數據時發生錯誤:', err);
+      } finally {
+        isLoading.value = false;
       }
     };
 
@@ -126,28 +133,28 @@ export default {
       function getUserId() {
         let id = localStorage.getItem('userId');
         if (!id) {
-          id = 'user_' + Math.random().toString(36).substr(2, 9);
-          localStorage.setItem('userId', id);
+            id = 'user_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('userId', id);
         }
         return id;
+    }
+
+    function getUserName(roomName) {
+      const nicknames = JSON.parse(localStorage.getItem('roomNicknames') || '{}');
+      if (!nicknames[roomName]) {
+        nicknames[roomName] = generateRandomNickname();
+        localStorage.setItem('roomNicknames', JSON.stringify(nicknames));
       }
-  
-      function getUserName() {
-        let name = localStorage.getItem('userName');
-        if (!name) {
-          name = generateRandomNickname();
-          localStorage.setItem('userName', name);
-        }
-        return name;
-      }
-  
-      function generateRandomNickname() {
-        const adjectives = ["台北", "101", "北投", "城市", "北市", "信義", "北投", "士林", "中山", "北車", "松山", "貓空", "陽明", "大稻埕", "天母", "貓纜", "西門", "北城", "北捷", "忠孝路", "內湖", "萬隆", "東區", "大安公園", "城市", "忠孝東路", "中正"];
-        const nouns = ["之光", "小太陽", "小天使", "探索者", "飛鷹", "夢想家", "暖心人", "夜行者", "智者", "追夢人", "飛鳥", "旅人", "山行者", "新星", "茶人", "文青", "心跳", "小精靈", "旅行家", "潛行者", "流浪者", "小俠", "先鋒", "勇者", "夜影", "詩人", "路旅者", "陽光", "小鹿", "夢想者", "藝人", "星辰", "潮人", "騎士", "小仙女", "小虎", "風箏", "微笑", "浪子", "街舞者", "霓虹", "陽光使者", "小太陽", "星光", "築夢人", "漫步者", "火焰", "追風"];
-        const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
-        const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
-        return `${randomAdjective}${randomNoun}`;
-      }
+      return nicknames[roomName];
+    }
+
+    function generateRandomNickname() {
+      const adjectives = ["台北", "101", "北投", "城市", "北市", "信義", "北投", "士林", "中山", "北車", "松山", "貓空", "陽明", "大稻埕", "天母", "貓纜", "西門", "北城", "北捷", "忠孝路", "內湖", "萬隆", "東區", "大安公園", "城市", "忠孝東路", "中正"];
+      const nouns = ["之光", "小太陽", "小天使", "探索者", "飛鷹", "夢想家", "暖心人", "夜行者", "智者", "追夢人", "飛鳥", "旅人", "山行者", "新星", "茶人", "文青", "心跳", "小精靈", "旅行家", "潛行者", "流浪者", "小俠", "先鋒", "勇者", "夜影", "詩人", "路旅者", "陽光", "小鹿", "夢想者", "藝人", "星辰", "潮人", "騎士", "小仙女", "小虎", "風箏", "微笑", "浪子", "街舞者", "霓虹", "陽光使者", "小太陽", "星光", "築夢人", "漫步者", "火焰", "追風"];
+      const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+      const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+      return `${randomAdjective}${randomNoun}`;
+    }
   
       const goBack = () => {
         router.push('/');
@@ -170,24 +177,24 @@ export default {
       });
   
       const sendMessage = () => {
-        if (newMessage.value.trim() && !isSending.value) {
-          isSending.value = true;
-          push(roomRef, {
-            userId: userId.value,
-            userName: userName.value,
-            text: newMessage.value.trim(),
-            timestamp: Date.now()
-          }).then(() => {
-            newMessage.value = '';
-            setTimeout(() => {
-              isSending.value = false;
-            }, 1000); 
-          }).catch((error) => {
-            console.error('Error sending message:', error);
+      if (newMessage.value.trim() && !isSending.value) {
+        isSending.value = true;
+        push(roomRef, {
+          userId: userId.value,
+          userName: userName.value,
+          text: newMessage.value.trim(),
+          timestamp: Date.now()
+        }).then(() => {
+          newMessage.value = '';
+          setTimeout(() => {
             isSending.value = false;
-          });
-        }
-      };
+          }, 1000); 
+        }).catch((error) => {
+          console.error('Error sending message:', error);
+          isSending.value = false;
+        });
+      }
+    };
   
       const formatTimestamp = (timestamp) => {
         const date = new Date(timestamp);
@@ -212,12 +219,40 @@ export default {
         busInfo,
         closeBusInfo,
         stationName,
+        showBusInfo,
+        isLoading,
+
       };
     }
   }
   </script>
   
   <style scoped>
+  .loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 50px;
+  height: 50px;
+  border: 3px solid rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+  border-top-color: #36a3b2;
+  animation: spin 1s ease-in-out infinite;
+  -webkit-animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@-webkit-keyframes spin {
+  to { -webkit-transform: rotate(360deg); }
+}
+
 .bus-info-overlay {
   position: fixed;
   top: 0;
