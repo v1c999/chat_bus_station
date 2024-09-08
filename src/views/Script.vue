@@ -80,8 +80,12 @@
             // 遍歷每個busId，找到與其對應的RouteID
             busIds.value.forEach(busId => {
               const matchingRoutes = data.data.BusInfo.filter(item => item.StopID === busId)
-              const matchingRouteIds = matchingRoutes.map(route => route.RouteID)
-              routeIds.value.push(...matchingRouteIds)
+              matchingRoutes.forEach(route => {
+                if (route.GoBack === '0' || route.GoBack === '1') {
+      const combinedValue = `${route.RouteID} ${route.GoBack}`;
+      routeIds.value.push(combinedValue);
+    }
+  });
             })
             console.log('Route IDs:', routeIds.value) // 在控制台輸出所有找到的 RouteID
   
@@ -97,27 +101,45 @@
       }
   
       const fetchRouteNames = async () => {
-        try {
-          const response = await axios.get('http://localhost:3005/getroutename')
-          const data = response.data
-          if (data && data.data.BusInfo) {
-            // 遍歷每個routeId，找到與其對應的nameZh和destinationZh
-            routeIds.value.forEach(routeId => {
-              const matchingRoute = data.data.BusInfo.find(route => route.Id === routeId)
-              if (matchingRoute) {
-                const routeName = `${matchingRoute.nameZh} -> ${matchingRoute.destinationZh}`
-                routeNames.value.push(routeName)
-              }
-            })
-            console.log('Route Names:', routeNames.value) // 在控制台輸出所有組合的 Route Name
-          } else {
-            error.value = '無法從API獲取到 RouteName數據'
-          }
-        } catch (err) {
-          console.error('獲取 RouteName數據時發生錯誤:', err)
-          error.value = '獲取 RouteName數據時發生錯誤'
+  try {
+    const response = await axios.get('http://localhost:3005/getroutename');
+    const data = response.data;
+
+    if (data && data.data.BusInfo) {
+      // Create arrays to hold routeIds and directions separately
+      const routeIdArray = [];
+      const directionArray = [];
+
+      // Iterate through each routeId and direction, find the matching nameZh and destinationZh
+      routeIds.value.forEach((routeIdWithDirection) => {
+        // Split routeIdWithDirection into routeId and direction
+        const [routeId, direction] = routeIdWithDirection.split(' ');
+
+        // Push the routeId and direction into their respective arrays
+        routeIdArray.push(routeId);
+        directionArray.push(direction);
+
+        // Find the route in the data that matches the routeId
+        const matchingRoute = data.data.BusInfo.find(route => String(route.Id) === routeId );
+
+        if (matchingRoute) {
+          console.log('Matching Route:', matchingRoute);
+          const routeName = `${matchingRoute.nameZh} -> ${matchingRoute.destinationZh}`;
+          routeNames.value.push(routeName);
         }
-      }
+      });
+    } else {
+      error.value = '無法從API獲取到 RouteName數據';
+    }
+  } catch (err) {
+    console.error('獲取 RouteName數據時發生錯誤:', err);
+    error.value = '獲取 RouteName數據時發生錯誤';
+  }
+};
+
+
+
+
   
       return {
         busIds,
