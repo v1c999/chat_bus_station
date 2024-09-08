@@ -1,33 +1,33 @@
 <template>
     <div class="chat-room">
-      <div class="header">
-        <button @click="goBack" class="icon-button">
-          <img src="/src/assets/back.png" alt="返回">
-        </button>
-        <h2>{{ roomName }}</h2>
-        <button @click="toggleBusInfo" class="icon-button">
-          {{ showBusInfo ? '關閉公車資訊' : '查看公車資訊' }}
-        </button>
+    <div class="header">
+      <button @click="goBack" class="icon-button">
+        <img src="/src/assets/back.png" alt="返回">
+      </button>
+      <h2>{{ roomName }}</h2>
+      <button @click="toggleBusInfo" class="icon-button">
+        {{ showBusInfo ? '關閉公車資訊' : '查看公車資訊' }}
+      </button>
+    </div>
+    <div v-if="showBusInfo" class="bus-info-overlay" @click="closeBusInfo">
+      <div class="bus-info-modal" @click.stop>
+        <h3>公車資訊 🚌💭</h3>
+        <table class="bus-info-table">
+          <thead>
+            <tr>
+              <th>路線</th>
+              <th>到站時間</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(bus, index) in busInfo" :key="index">
+              <td>{{ bus.route }}</td>
+              <td>{{ bus.arrivalTime }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <div v-if="showBusInfo" class="bus-info-overlay" @click="closeBusInfo">
-        <div class="bus-info-modal" @click.stop>
-            <h3>公車資訊 🚌💭</h3>
-            <table class="bus-info-table">
-                <thead>
-                <tr>
-                    <th>路線</th>
-                    <th>到站時間</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr v-for="(bus, index) in busInfo" :key="index">
-                    <td>{{ bus.route }}</td>
-                    <td>{{ bus.arrivalTime }}</td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-      </div>
+    </div>
       <div class="messages" ref="messagesContainer">
         
         <div v-for="message in messages" :key="message.id" class="message-container" :class="{ 'user-message': message.userId === userId }">
@@ -46,46 +46,80 @@
   </template>
   
   <script>
-  import { ref, onMounted, onUnmounted, nextTick } from 'vue';
-  import { useRoute, useRouter } from 'vue-router';
-  import { getDatabase, ref as dbRef, push, onChildAdded, off } from 'firebase/database';
-  
-  export default {
-    setup() {
-      const route = useRoute();
-      const router = useRouter();
-      const roomName = ref(route.params.roomName);
-      const messages = ref([]);
-      const newMessage = ref('');
-      const messagesContainer = ref(null);
-      const db = getDatabase();
-      const userId = ref(getUserId());
-      const userName = ref(getUserName());
-      const roomRef = dbRef(db, `chatrooms/${roomName.value}`);
-      const isSending = ref(false);
-      const showBusInfo = ref(false);
-      const busInfo = ref([
-        { route: '307', arrivalTime: '5分鐘' },
-        { route: '513', arrivalTime: '10分鐘' },
-        { route: '235', arrivalTime: '15分鐘' },
-        { route: '307', arrivalTime: '5分鐘' },
-        { route: '307', arrivalTime: '5分鐘' },
-        { route: '307', arrivalTime: '5分鐘' },
-        { route: '307', arrivalTime: '5分鐘' },
-        { route: '307', arrivalTime: '5分鐘' },
-        { route: '307', arrivalTime: '5分鐘' },
-        { route: '307', arrivalTime: '5分鐘' },
-        { route: '307', arrivalTime: '5分鐘' },
-        { route: '307', arrivalTime: '5分鐘' },
-        { route: '307', arrivalTime: '5分鐘' },
-        { route: '307', arrivalTime: '5分鐘' },
-        { route: '307', arrivalTime: '5分鐘' },
-        { route: '307', arrivalTime: '5分鐘' },
-        { route: '307', arrivalTime: '5分鐘' },
-        { route: '307', arrivalTime: '5分鐘' },
-        { route: '307', arrivalTime: '5分鐘' },
-        { route: '307', arrivalTime: '5分鐘' },
-      ]);
+ import { ref, onMounted, onUnmounted, nextTick } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { getDatabase, ref as dbRef, push, onChildAdded, off } from 'firebase/database';
+import axios from 'axios';
+
+export default {
+  setup() {
+    const route = useRoute();
+    const router = useRouter();
+    const roomName = ref(route.params.roomName);
+    const stationName = ref(decodeURIComponent(route.params.roomName)); 
+    const messages = ref([]);
+    const newMessage = ref('');
+    const messagesContainer = ref(null);
+    const db = getDatabase();
+    const userId = ref(getUserId());
+    const userName = ref(getUserName());
+    const roomRef = dbRef(db, `chatrooms/${roomName.value}`);
+    const isSending = ref(false);
+    const showBusInfo = ref(false);
+    const busInfo = ref([]);
+
+    const toggleBusInfo = async () => {
+      showBusInfo.value = !showBusInfo.value;
+      if (showBusInfo.value) {
+        await fetchBusInfo();
+      }
+    };
+
+    const fetchBusInfo = async () => {
+      try {
+        const stopResponse = await axios.get('http://localhost:3005/getstopid');
+        const stopData = stopResponse.data.data.BusInfo;
+        const stops = stopData.filter(stop => stop.nameZh === stationName.value);
+
+        if (stops.length === 0) {
+          console.error(`未找到名稱為 "${stationName.value}" 的站牌`);
+          return;
+        }
+
+        const estimateResponse = await axios.get('http://localhost:3005/getrouteid');
+        const estimateData = estimateResponse.data.data.BusInfo;
+
+        const routeResponse = await axios.get('http://localhost:3005/getroutename');
+        const routeData = routeResponse.data.data.BusInfo;
+
+        const relevantEstimates = estimateData.filter(item => 
+          stops.some(stop => stop.Id === item.StopID) && 
+          (item.GoBack === '0' || item.GoBack === '1')
+        );
+
+        busInfo.value = relevantEstimates.map(estimate => {
+          const route = routeData.find(r => r.Id === estimate.RouteID);
+          return {
+            route: `${route?.nameZh || '未知路線'} - ${estimate.GoBack === '0' ? route?.destinationZh : route?.departureZh}`,
+            arrivalTime: formatEstimateTime(estimate.EstimateTime)
+          };
+        });
+
+      } catch (err) {
+        console.error('獲取數據時發生錯誤:', err);
+      }
+    };
+
+
+    const formatEstimateTime = (time) => {
+      if (time === undefined) return '無資料';
+      if (time === '-1') return '尚未發車';
+      if (time === '-2') return '交管不停靠';
+      if (time === '-3') return '末班車已過';
+      if (time === '-4') return '今日未營運';
+      return `${Math.floor(time / 60)} 分鐘`;
+    };
+
       const closeBusInfo = () => {
         showBusInfo.value = false;
       };
@@ -117,10 +151,6 @@
   
       const goBack = () => {
         router.push('/');
-      };
-  
-      const toggleBusInfo = () => {
-        showBusInfo.value = !showBusInfo.value;
       };
   
       onMounted(() => {
@@ -180,7 +210,8 @@
         userId,
         formatTimestamp,
         busInfo,
-        closeBusInfo
+        closeBusInfo,
+        stationName,
       };
     }
   }
@@ -209,9 +240,8 @@
   border-radius: 10px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   z-index: 1000;
-  max-width: 80%;
   max-height: 70%;
-  min-width: 70%;
+  width: 85%;
   overflow-y: auto;
 }
 
