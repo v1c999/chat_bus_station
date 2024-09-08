@@ -109,7 +109,7 @@ export default {
             route: `${route?.nameZh || '未知路線'} - ${estimate.GoBack === '0' ? route?.destinationZh : route?.departureZh}`,
             arrivalTime: formatEstimateTime(estimateTimeNumber),
             estimateTime: estimateTimeNumber,
-            isUrgent: estimateTimeNumber > 0 && estimateTimeNumber <= 239
+            isUrgent: estimateTimeNumber >= 0 && estimateTimeNumber <= 239
           };
         }).sort((a, b) => {
           if (isNaN(a.estimateTime) || a.estimateTime < 0) return 1;
