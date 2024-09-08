@@ -24,7 +24,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(bus, index) in busInfo" :key="index">
+            <tr v-for="(bus, index) in busInfo" :key="index" :class="{ 'urgent': bus.isUrgent }">
               <td>{{ bus.route }}</td>
               <td>{{ bus.arrivalTime }}</td>
             </tr>
@@ -104,11 +104,20 @@ export default {
 
         busInfo.value = relevantEstimates.map(estimate => {
           const route = routeData.find(r => r.Id === estimate.RouteID);
+          const estimateTimeNumber = parseInt(estimate.EstimateTime);
           return {
             route: `${route?.nameZh || '未知路線'} - ${estimate.GoBack === '0' ? route?.destinationZh : route?.departureZh}`,
-            arrivalTime: formatEstimateTime(estimate.EstimateTime)
+            arrivalTime: formatEstimateTime(estimateTimeNumber),
+            estimateTime: estimateTimeNumber,
+            isUrgent: estimateTimeNumber >= 0 && estimateTimeNumber <= 239
           };
+        }).sort((a, b) => {
+          if (isNaN(a.estimateTime) || a.estimateTime < 0) return 1;
+          if (isNaN(b.estimateTime) || b.estimateTime < 0) return -1;
+          return a.estimateTime - b.estimateTime;
         });
+
+
 
       } catch (err) {
         console.error('獲取數據時發生錯誤:', err);
@@ -228,6 +237,10 @@ export default {
   </script>
   
   <style scoped>
+  .bus-info-table .urgent {
+  color: #36a3b2;
+  font-weight: bold;
+}
   .loading-container {
   display: flex;
   justify-content: center;
