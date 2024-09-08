@@ -1,155 +1,114 @@
 <template>
-    <div>
-      <button @click="fetchBusInfo">獲取站牌資訊</button>
-      
-      <div v-if="busIds.length > 0">
-        <h2>站牌 ID 列表:</h2>
-        <ul>
-          <li v-for="id in busIds" :key="id">{{ id }}</li>
-        </ul>
-      </div>
-      <div v-if="routeIds.length > 0">
-        <h2>Route ID 列表:</h2>
-        <ul>
-          <li v-for="routeId in routeIds" :key="routeId">{{ routeId }}</li>
-        </ul>
-      </div>
-      <div v-if="routeNames.length > 0">
-        <h2>Route Name 列表:</h2>
-        <ul>
-          <li v-for="name in routeNames" :key="name">{{ name }}</li>
-        </ul>
-      </div>
-      <div v-else-if="error">
-        {{ error }}
-      </div>
-      <div v-else-if="loading">
-        正在加載數據...
+  <div class="p-4">
+    <input
+      v-model="stationName"
+      placeholder="輸入站牌名稱"
+      class="border p-2 mb-2"
+    />
+    <button
+      @click="fetchBusInfo"
+      class="bg-blue-500 text-white p-2 rounded"
+    >
+      獲取公車資訊
+    </button>
+    
+    <p v-if="loading">正在加載數據...</p>
+    <p v-if="error" class="text-red-500">{{ error }}</p>
+    
+    <div v-if="busInfo.length > 0" class="mt-4">
+      <h2 class="text-xl font-bold mb-2">{{ stationName }} 站牌公車資訊:</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div v-for="(bus, index) in busInfo" :key="index" class="border rounded p-4">
+          <h3 class="font-bold">{{ bus.routeName }}</h3>
+          <p>方向: {{ bus.direction }}</p>
+          <p>終點站: {{ bus.destination }}</p>
+          <p>預計到站時間: {{ formatEstimateTime(bus.estimateTime) }}</p>
+        </div>
       </div>
     </div>
-  </template>
-  
-  <script>
-  import { ref } from 'vue'
-  import axios from 'axios'
-  
-  export default {
-    setup() {
-      const roomName = '臺大綜合體育館'
-      const busIds = ref([])
-      const routeIds = ref([])
-      const routeNames = ref([])  // 用來存儲組合後的字串
-      const error = ref(null)
-      const loading = ref(false)
-  
-      const fetchBusInfo = async () => {
-        loading.value = true
-        error.value = null
-        busIds.value = []
-        routeIds.value = []
-        routeNames.value = []  // 清空之前的數據
-  
-        try {
-          const response = await axios.get('http://localhost:3005/getstopid')
-          const data = response.data
-          if (data && data.data.BusInfo) {
-            const filteredBuses = data.data.BusInfo.filter(bus => bus.nameZh === roomName)
-            busIds.value = filteredBuses.map(bus => bus.Id)
-            console.log('Bus IDs:', busIds.value) // 在控制台輸出所有匹配的 bus.Id
-            if (busIds.value.length === 0) {
-              error.value = `未找到名稱為 "${roomName}" 的站牌資訊`
-            } else {
-              await fetchRouteIds()
-            }
-          } else {
-            error.value = '無法從API獲取到BusInfo數據'
-          }
-        } catch (err) {
-          console.error('獲取數據時發生錯誤:', err)
-          error.value = '獲取數據時發生錯誤'
-        } finally {
+  </div>
+</template>
+
+<script>
+import { ref, onMounted } from 'vue'
+import axios from 'axios'
+
+export default {
+  setup() {
+    const stationName = ref('')
+    const busInfo = ref([])
+    const error = ref(null)
+    const loading = ref(false)
+
+    const fetchBusInfo = async () => {
+      loading.value = true
+      error.value = null
+      busInfo.value = []
+
+      try {
+        // 獲取站牌ID
+        const stopResponse = await axios.get('http://localhost:3005/getstopid')
+        const stopData = stopResponse.data.data.BusInfo
+        const stops = stopData.filter(stop => stop.nameZh === stationName.value)
+
+        if (stops.length === 0) {
+          error.value = `未找到名稱為 "${stationName.value}" 的站牌`
           loading.value = false
+          return
         }
-      }
-  
-      const fetchRouteIds = async () => {
-        try {
-          const response = await axios.get('http://localhost:3005/getrouteid')
-          const data = response.data
-          if (data && data.data.BusInfo) {
-            // 遍歷每個busId，找到與其對應的RouteID
-            busIds.value.forEach(busId => {
-              const matchingRoutes = data.data.BusInfo.filter(item => item.StopID === busId)
-              matchingRoutes.forEach(route => {
-                if (route.GoBack === '0' || route.GoBack === '1') {
-      const combinedValue = `${route.RouteID} ${route.GoBack}`;
-      routeIds.value.push(combinedValue);
-    }
-  });
-            })
-            console.log('Route IDs:', routeIds.value) // 在控制台輸出所有找到的 RouteID
-  
-            // 在找到 RouteID 之後，繼續調用 getRouteNames
-            await fetchRouteNames()
-          } else {
-            error.value = '無法從API獲取到 RouteID數據'
+
+        // 獲取估計到站時間
+        const estimateResponse = await axios.get('http://localhost:3005/getrouteid')
+        const estimateData = estimateResponse.data.data.BusInfo
+
+        // 獲取路線名稱和終點站資訊
+        const routeResponse = await axios.get('http://localhost:3005/getroutename')
+        const routeData = routeResponse.data.data.BusInfo
+
+        // 整合數據
+        const relevantEstimates = estimateData.filter(item => 
+          stops.some(stop => stop.Id === item.StopID) && 
+          (item.GoBack === '0' || item.GoBack === '1')
+        )
+
+        busInfo.value = relevantEstimates.map(estimate => {
+          const route = routeData.find(r => r.Id === estimate.RouteID)
+          return {
+            routeId: estimate.RouteID,
+            routeName: route?.nameZh || '未知路線',
+            estimateTime: estimate.EstimateTime,
+            direction: estimate.GoBack === '0' ? '去程' : '回程',
+            destination: estimate.GoBack === '0' ? route?.destinationZh : route?.departureZh
           }
-        } catch (err) {
-          console.error('獲取 RouteID數據時發生錯誤:', err)
-          error.value = '獲取 RouteID數據時發生錯誤'
-        }
-      }
-  
-      const fetchRouteNames = async () => {
-  try {
-    const response = await axios.get('http://localhost:3005/getroutename');
-    const data = response.data;
+        })
 
-    if (data && data.data.BusInfo) {
-      // Create arrays to hold routeIds and directions separately
-      const routeIdArray = [];
-      const directionArray = [];
+        console.log('找到的公車數量:', busInfo.value.length)
 
-      // Iterate through each routeId and direction, find the matching nameZh and destinationZh
-      routeIds.value.forEach((routeIdWithDirection) => {
-        // Split routeIdWithDirection into routeId and direction
-        const [routeId, direction] = routeIdWithDirection.split(' ');
-
-        // Push the routeId and direction into their respective arrays
-        routeIdArray.push(routeId);
-        directionArray.push(direction);
-
-        // Find the route in the data that matches the routeId
-        const matchingRoute = data.data.BusInfo.find(route => String(route.Id) === routeId );
-
-        if (matchingRoute) {
-          console.log('Matching Route:', matchingRoute);
-          const routeName = `${matchingRoute.nameZh} -> ${matchingRoute.destinationZh}`;
-          routeNames.value.push(routeName);
-        }
-      });
-    } else {
-      error.value = '無法從API獲取到 RouteName數據';
-    }
-  } catch (err) {
-    console.error('獲取 RouteName數據時發生錯誤:', err);
-    error.value = '獲取 RouteName數據時發生錯誤';
-  }
-};
-
-
-
-
-  
-      return {
-        busIds,
-        routeIds,
-        routeNames,
-        error,
-        loading,
-        fetchBusInfo
+      } catch (err) {
+        console.error('獲取數據時發生錯誤:', err)
+        error.value = '獲取數據時發生錯誤'
+      } finally {
+        loading.value = false
       }
     }
+
+    const formatEstimateTime = (time) => {
+      if (time === undefined) return '無資料'
+      if (time === '-1') return '尚未發車'
+      if (time === '-2') return '交管不停靠'
+      if (time === '-3') return '末班車已過'
+      if (time === '-4') return '今日未營運'
+      return `${Math.floor(time / 60)} 分鐘`
+    }
+
+    return {
+      stationName,
+      busInfo,
+      error,
+      loading,
+      fetchBusInfo,
+      formatEstimateTime
+    }
   }
-  </script>
-  
+}
+</script>
